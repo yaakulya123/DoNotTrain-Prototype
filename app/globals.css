@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=JetBrains+Mono:wght@400;500&display=swap");
+
+:root {
+  color-scheme: dark;
+  /* Subtle grid background pattern for sophistication */
+  --grid-color: rgba(255, 255, 255, 0.03);
+}
+
+html,
+body {
+  background-color: #0a0b0f;
+  color: #ECEEF2;
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv11";
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  border-color: #22262f;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.serif {
+  font-family: "Newsreader", Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.mono {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-feature-settings: "calt" 0;
+}
+
+/* Subtle dotted grid background — makes dark surfaces feel less flat */
+.bg-grid {
+  background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.04) 1px, transparent 0);
+  background-size: 32px 32px;
+}
+
+/* Hairline divider used between sections */
+.hairline {
+  background: linear-gradient(90deg, transparent, #22262f 20%, #22262f 80%, transparent);
+  height: 1px;
+}
+
+/* Soft glow used sparingly on primary CTAs */
+.glow-accent {
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2), 0 8px 32px -8px rgba(99, 102, 241, 0.4);
+}
+
+/* ----- Stats marquee ----- */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(calc(-100% - var(--gap, 2rem))); }
+}
+
+.marquee {
+  --duration: 40s;
+  --gap: 2rem;
+  display: flex;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.marquee-track {
+  display: flex;
+  gap: var(--gap);
+  flex-shrink: 0;
+  animation: marquee var(--duration) linear infinite;
+  padding-right: var(--gap);
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
