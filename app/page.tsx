@@ -18,8 +18,6 @@ import { Dithering } from "@paper-design/shaders-react";
 
 const HERO_VIDEO =
   "https://videos.pexels.com/video-files/34127877/14471387_1920_1080_30fps.mp4";
-const HERO_POSTER =
-  "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=2400&q=80";
 
 export default function LandingPage() {
   const { data: total, isLoading } = useReadContract({
@@ -35,11 +33,11 @@ export default function LandingPage() {
     <>
       {/* HERO — full-bleed video background, asymmetric bottom-aligned headline + stats marquee */}
       <section className="relative flex min-h-[88vh] w-full flex-col items-start justify-end overflow-hidden">
-        {/* Background video — autoplay, muted, loop. Poster fallback while it loads. */}
+        {/* Solid bg sits behind the video so there's no white flash before it loads */}
+        <div className="absolute inset-0 bg-bg" />
         <video
           className="absolute inset-0 h-full w-full object-cover scale-[1.02]"
           src={HERO_VIDEO}
-          poster={HERO_POSTER}
           autoPlay
           loop
           muted
