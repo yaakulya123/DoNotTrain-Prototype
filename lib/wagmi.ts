@@ -13,16 +13,23 @@ export const SEPOLIA_CHAIN_ID = sepolia.id;
 // down.
 const isBrowser = typeof window !== "undefined";
 
+// batch: false disables viem's Multicall3 batching. With batching enabled,
+// every useReadContract is folded into a single aggregate3 call — and a
+// single broken sub-call (or upstream RPC quirk in the multicall response)
+// fails the entire batch, which is exactly what was tripping the
+// prior-notice scan in production.
+const httpOpts = { batch: false } as const;
+
 const sepoliaTransport = fallback(
   isBrowser
     ? [
-        http("/api/rpc"),
-        http("https://ethereum-sepolia-rpc.publicnode.com"),
-        http("https://sepolia.gateway.tenderly.co"),
+        http("/api/rpc", httpOpts),
+        http("https://ethereum-sepolia-rpc.publicnode.com", httpOpts),
+        http("https://sepolia.gateway.tenderly.co", httpOpts),
       ]
     : [
-        http("https://ethereum-sepolia-rpc.publicnode.com"),
-        http("https://sepolia.gateway.tenderly.co"),
+        http("https://ethereum-sepolia-rpc.publicnode.com", httpOpts),
+        http("https://sepolia.gateway.tenderly.co", httpOpts),
       ]
 );
 
@@ -31,5 +38,7 @@ export const wagmiConfig = getDefaultConfig({
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "REPLACE_ME",
   chains: [sepolia],
   transports: { [sepolia.id]: sepoliaTransport },
+  // Disable client-level batching too — same issue, just at a higher layer
+  batch: { multicall: false },
   ssr: true,
 });
