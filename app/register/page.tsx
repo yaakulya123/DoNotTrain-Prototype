@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { type Hex } from "viem";
-import { useAccount, useChainId, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { type Hex, decodeFunctionResult, encodeFunctionData } from "viem";
+import { useAccount, useChainId, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { sepolia } from "wagmi/chains";
 import { Loader2, ArrowUpRight, ShieldAlert, Copy, Check } from "lucide-react";
 
@@ -41,76 +41,103 @@ export default function RegisterPage() {
   const { writeContract, data: txHash, error: writeError, reset } = useWriteContract();
   const { data: receipt } = useWaitForTransactionReceipt({ hash: txHash });
 
-  const {
-    data: alreadyExists,
-    isSuccess: existsSuccess,
-    error: existsError,
-    refetch: refetchExists,
-  } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: DONOTTRAIN_ABI,
-    functionName: "isRegistered",
-    args: sha256 ? [sha256] : undefined,
-    query: { enabled: !!sha256 },
-  });
+  // ── Direct contract reads via the same-origin /api/rpc proxy.
+  // We bypass wagmi/viem's read hooks here because their multicall
+  // batching and React Query retry semantics were swallowing errors
+  // and never recovering once a query landed in a failure state in
+  // production. Plain fetch + encode/decode is straightforward to reason
+  // about and trivially retried by re-running the effect.
+  const [alreadyExists, setAlreadyExists] = useState<boolean | undefined>(undefined);
+  const [priorMatchSha, setPriorMatchSha] = useState<Hex | undefined>(undefined);
+  const [priorMatch, setPriorMatch] = useState<readonly [Hex, bigint, bigint, Hex] | undefined>(undefined);
+  const [checkError, setCheckError] = useState<string | undefined>(undefined);
+  const [allChecksComplete, setAllChecksComplete] = useState(false);
+  const [retryNonce, setRetryNonce] = useState(0);
+  const retryChecks = () => setRetryNonce((n) => n + 1);
 
-  // ── Prior-notice safeguard: scan registry for a perceptually-similar match
-  // before allowing this registration. If we find one, the user must
-  // acknowledge before proceeding — so they can't accidentally (or maliciously)
-  // re-register a slightly modified version of someone else's already-protected work.
-  const shouldScanForPrior =
-    !!pHash && pHash !== PHASH_ZERO && !alreadyExists && status.kind === "ready";
+  useEffect(() => {
+    if (status.kind !== "ready" || !sha256 || !pHash) {
+      setAllChecksComplete(false);
+      return;
+    }
 
-  const {
-    data: similarHashes,
-    isSuccess: scanSuccess,
-    error: scanError,
-    refetch: refetchScan,
-  } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: DONOTTRAIN_ABI,
-    functionName: "findSimilar",
-    args: pHash ? [pHash, PRIOR_NOTICE_THRESHOLD] : undefined,
-    query: { enabled: shouldScanForPrior },
-  });
+    let cancelled = false;
+    setAlreadyExists(undefined);
+    setPriorMatchSha(undefined);
+    setPriorMatch(undefined);
+    setCheckError(undefined);
+    setAllChecksComplete(false);
 
-  const priorMatchSha = similarHashes?.[0];
-  const {
-    data: priorMatch,
-    isSuccess: priorMatchSuccess,
-    error: priorMatchError,
-    refetch: refetchPriorMatch,
-  } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: DONOTTRAIN_ABI,
-    functionName: "getRegistration",
-    args: priorMatchSha ? [priorMatchSha] : undefined,
-    query: { enabled: !!priorMatchSha },
-  });
+    async function rpcCall(functionName: string, args: readonly unknown[]): Promise<unknown> {
+      // viem's encode/decode helpers have very strict typing here; the
+      // inputs are validated at runtime by the contract itself, so we
+      // intentionally bypass the type-system gymnastics with a narrow cast.
+      const data = encodeFunctionData({
+        abi: DONOTTRAIN_ABI,
+        functionName,
+        args,
+      } as Parameters<typeof encodeFunctionData>[0]);
+      const res = await fetch("/api/rpc", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "eth_call",
+          params: [{ to: CONTRACT_ADDRESS, data }, "latest"],
+          id: Date.now(),
+        }),
+      });
+      const j = await res.json();
+      if (j.error) throw new Error(`${functionName}: ${j.error.message}`);
+      return decodeFunctionResult({
+        abi: DONOTTRAIN_ABI,
+        functionName,
+        data: j.result as Hex,
+      } as Parameters<typeof decodeFunctionResult>[0]);
+    }
 
-  const checkError = existsError ?? scanError ?? priorMatchError;
-  const retryChecks = () => {
-    refetchExists();
-    refetchScan();
-    refetchPriorMatch();
-  };
+    (async () => {
+      try {
+        const exists = (await rpcCall("isRegistered", [sha256])) as boolean;
+        if (cancelled) return;
+        setAlreadyExists(exists);
+
+        if (exists) {
+          setAllChecksComplete(true);
+          return;
+        }
+
+        if (pHash === PHASH_ZERO) {
+          setAllChecksComplete(true);
+          return;
+        }
+
+        const similar = (await rpcCall("findSimilar", [pHash, PRIOR_NOTICE_THRESHOLD])) as readonly Hex[];
+        if (cancelled) return;
+
+        const candidate = similar[0];
+        if (!candidate) {
+          setAllChecksComplete(true);
+          return;
+        }
+        setPriorMatchSha(candidate);
+
+        const reg = (await rpcCall("getRegistration", [candidate])) as readonly [Hex, bigint, bigint, Hex];
+        if (cancelled) return;
+        setPriorMatch(reg);
+        setAllChecksComplete(true);
+      } catch (e) {
+        if (cancelled) return;
+        setCheckError(e instanceof Error ? e.message : String(e));
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [status.kind, sha256, pHash, retryNonce]);
 
   const hasPriorNotice = !!priorMatchSha && !!priorMatch;
-
-  // Security gate: only reveal the Register button after every relevant
-  // contract read has succeeded. If any read errored or timed out we leave
-  // the button hidden — better to make the user retry than to let a
-  // silently-failed prior-notice scan unlock registration of an
-  // already-protected work.
-  const needsPriorScan = !!pHash && pHash !== PHASH_ZERO;
-  const existsCheckDone = !!sha256 && existsSuccess;
-  const priorScanDone = !needsPriorScan || alreadyExists || scanSuccess;
-  const priorMatchResolved = !priorMatchSha || priorMatchSuccess;
-  const allChecksComplete =
-    status.kind === "ready" &&
-    existsCheckDone &&
-    priorScanDone &&
-    priorMatchResolved;
 
   useEffect(() => {
     if (!file) return;
