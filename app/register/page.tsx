@@ -334,7 +334,7 @@ function PriorNoticePanel({
       <div className="bg-danger/15 px-5 py-3 flex items-center gap-2 border-b border-danger/40">
         <ShieldAlert className="h-4 w-4 text-danger shrink-0" />
         <div className="text-[13px] font-semibold text-text-primary">
-          Registration blocked — this work is already protected
+          Registration blocked. This work is already protected
         </div>
       </div>
 
@@ -375,13 +375,13 @@ function PriorNoticePanel({
             Contact the registered owner
           </div>
           <p className="text-[12px] text-text-secondary leading-[1.65]">
-            Ethereum addresses are pseudonymous — there is no email or phone on
+            Ethereum addresses are pseudonymous. There is no email or phone on
             them by default. Reach out using one of the wallet-native channels below.
           </p>
 
           <ul className="text-[12px] text-text-secondary leading-[1.65] space-y-2">
             <li>
-              <span className="text-text-primary font-medium">XMTP</span> — encrypted
+              <span className="text-text-primary font-medium">XMTP</span>: encrypted
               wallet-to-wallet messaging. Open{" "}
               <a
                 href="https://xmtp.chat"
@@ -397,7 +397,7 @@ function PriorNoticePanel({
               client (Coinbase Wallet, Converse, Hey, etc.).
             </li>
             <li>
-              <span className="text-text-primary font-medium">ENS profile</span> —
+              <span className="text-text-primary font-medium">ENS profile</span>:
               if the owner has an ENS name, their text records may include
               email, twitter, or website. Look them up at{" "}
               <a
@@ -412,7 +412,7 @@ function PriorNoticePanel({
               .
             </li>
             <li>
-              <span className="text-text-primary font-medium">Etherscan</span> —
+              <span className="text-text-primary font-medium">Etherscan</span>:
               the address page sometimes shows an attached ENS name, label, or
               public profile.
             </li>
@@ -491,7 +491,7 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
 
 function friendlyError(message: string): string {
   if (/User rejected|User denied/i.test(message)) {
-    return "Transaction cancelled in wallet — try again when you're ready.";
+    return "Transaction cancelled in wallet. Try again when you're ready.";
   }
   if (/insufficient funds/i.test(message)) {
     return "Not enough Sepolia ETH. Get free test ETH from the Google Cloud Web3 faucet.";

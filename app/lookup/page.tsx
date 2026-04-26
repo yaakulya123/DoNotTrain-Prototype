@@ -188,7 +188,7 @@ export default function LookupPage() {
 
             {!loading && exactFound && exact.data && sha256 && (
               <RegistrationCard
-                heading="Registered — do not train"
+                heading="Registered. Do not train"
                 variant="warning"
                 sha256={sha256}
                 pHash={(exact.data[3] as Hex) ?? PHASH_ZERO}
@@ -200,7 +200,7 @@ export default function LookupPage() {
 
             {!loading && !exactFound && firstSimilarSha && similarReg.data && pHash && (
               <RegistrationCard
-                heading="Similar work registered — possibly a modified copy"
+                heading="Similar work registered. Possibly a modified copy"
                 variant="warning"
                 sha256={firstSimilarSha}
                 pHash={(similarReg.data[3] as Hex) ?? PHASH_ZERO}

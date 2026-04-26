@@ -26,7 +26,7 @@ export default function LandingPage() {
     functionName: "totalRegistrations",
   });
 
-  const counter = isLoading ? "—" : total !== undefined ? total.toString() : "0";
+  const counter = isLoading ? "…" : total !== undefined ? total.toString() : "0";
   const shortContract = `${CONTRACT_ADDRESS.slice(0, 6)}…${CONTRACT_ADDRESS.slice(-4)}`;
 
   return (
@@ -97,7 +97,7 @@ export default function LandingPage() {
             <div className="w-full lg:w-2/5 lg:pb-2">
               <p className="serif italic text-[18px] sm:text-[22px] lg:text-[24px] leading-[1.4] text-text-secondary lg:text-right">
                 A creator drops a file. The browser fingerprints it. One signature on Ethereum
-                produces an unforgeable, court-admissible record of prior notice — without ever
+                produces an unforgeable, court-admissible record of prior notice, without ever
                 uploading the work itself.
               </p>
             </div>
@@ -144,7 +144,7 @@ export default function LandingPage() {
                 Why blockchain.
               </h2>
               <p className="mt-4 text-[15px] text-text-secondary leading-relaxed max-w-md">
-                A normal database can serve lookups. The blockchain isn't the user interface — it's
+                A normal database can serve lookups. The blockchain isn't the user interface. It's
                 the vault. Four properties only a public chain provides.
               </p>
             </div>
@@ -179,7 +179,7 @@ export default function LandingPage() {
         </h2>
         <p className="mt-6 text-[15px] text-text-secondary leading-[1.7] max-w-2xl mx-auto">
           We do not detect infringement. We do not block training. But the on-chain record is
-          unforgeable — if an AI lab trains on registered work afterward, the timestamp converts an
+          unforgeable. If an AI lab trains on registered work afterward, the timestamp converts an
           "oops" defense into willful infringement, which unlocks higher damages in many
           jurisdictions.
         </p>
@@ -278,7 +278,7 @@ const REASONS = [
   },
   {
     title: "Trust-minimized timestamps",
-    body: "Block timestamps are set by Ethereum consensus — not by us, not by the registrant.",
+    body: "Block timestamps are set by Ethereum consensus, not by us, not by the registrant.",
     Icon: Clock,
   },
   {

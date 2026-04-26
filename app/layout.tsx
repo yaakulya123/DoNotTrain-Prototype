@@ -5,7 +5,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { addressUrl, CONTRACT_ADDRESS } from "@/lib/contract";
 
 export const metadata: Metadata = {
-  title: "DoNotTrain — On-chain registry for AI training opt-out",
+  title: "DoNotTrain · On-chain registry for AI training opt-out",
   description:
     "Court-admissible, on-chain proof of prior notice. Register a hash of your work in seconds. Free, global, uncensorable.",
 };

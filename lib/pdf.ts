@@ -87,7 +87,7 @@ export async function downloadEvidencePDF(d: EvidenceData) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9.5);
   doc.setTextColor(...C.muted);
-  doc.text("Proof of prior notice — Ethereum Sepolia testnet", MARGIN_X, y);
+  doc.text("Proof of prior notice · Ethereum Sepolia testnet", MARGIN_X, y);
   y += 8;
 
   doc.setFont("courier", "normal");

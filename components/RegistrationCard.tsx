@@ -35,7 +35,7 @@ export function RegistrationCard({
     variant === "warning" ? "bg-warning" : "bg-success";
   const accentText =
     variant === "warning" ? "text-warning" : "text-success";
-  const heading_ = heading ?? (variant === "warning" ? "Registered — do not train" : "Registered on-chain");
+  const heading_ = heading ?? (variant === "warning" ? "Registered. Do not train" : "Registered on-chain");
 
   return (
     <div className="rounded-lg border border-border bg-surface overflow-hidden">

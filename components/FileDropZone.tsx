@@ -58,7 +58,7 @@ export function FileDropZone({ onFile, accept, hint }: Props) {
       </div>
       <div className="text-[15px] font-medium text-text-primary">Drop a file or click to choose</div>
       <div className="text-[13px] text-text-secondary mt-2 max-w-md mx-auto">
-        {hint ?? "Any file type. Your file stays on your device — only the hashes go on-chain."}
+        {hint ?? "Any file type. Your file stays on your device. Only the hashes go on-chain."}
       </div>
     </div>
   );

@@ -46,7 +46,7 @@ const PHASES: Phase[] = [
     step: "03",
     title: "Download evidence.",
     summary:
-      "Receive a court-ready PDF with the registration record and a public Etherscan link. Anyone — courts, AI labs, the public — can verify it independently.",
+      "Receive a court-ready PDF with the registration record and a public Etherscan link. Anyone (courts, AI labs, the public) can verify it independently.",
     micro: ["Verifiable PDF receipt", "Public Etherscan link", "Independently provable"],
     Icon: FileSignature,
     image:
@@ -69,7 +69,7 @@ export function Workflow() {
             About thirty seconds.
           </h2>
           <p className="mt-6 text-text-secondary text-[15px] sm:text-[17px] leading-[1.65]">
-            From dropping a file to holding a court-ready receipt — the full
+            From dropping a file to holding a court-ready receipt, the full
             user-facing flow runs entirely in your browser plus one Ethereum
             transaction.
           </p>
