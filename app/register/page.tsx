@@ -41,7 +41,11 @@ export default function RegisterPage() {
   const { writeContract, data: txHash, error: writeError, reset } = useWriteContract();
   const { data: receipt } = useWaitForTransactionReceipt({ hash: txHash });
 
-  const { data: alreadyExists } = useReadContract({
+  const {
+    data: alreadyExists,
+    isFetched: existsFetched,
+    isFetching: existsFetching,
+  } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: DONOTTRAIN_ABI,
     functionName: "isRegistered",
@@ -56,7 +60,11 @@ export default function RegisterPage() {
   const shouldScanForPrior =
     !!pHash && pHash !== PHASH_ZERO && !alreadyExists && status.kind === "ready";
 
-  const { data: similarHashes, isLoading: scanningPrior } = useReadContract({
+  const {
+    data: similarHashes,
+    isFetched: scanFetched,
+    isFetching: scanFetching,
+  } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: DONOTTRAIN_ABI,
     functionName: "findSimilar",
@@ -65,7 +73,11 @@ export default function RegisterPage() {
   });
 
   const priorMatchSha = similarHashes?.[0];
-  const { data: priorMatch } = useReadContract({
+  const {
+    data: priorMatch,
+    isFetched: priorMatchFetched,
+    isFetching: priorMatchFetching,
+  } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: DONOTTRAIN_ABI,
     functionName: "getRegistration",
@@ -74,6 +86,22 @@ export default function RegisterPage() {
   });
 
   const hasPriorNotice = !!priorMatchSha && !!priorMatch;
+
+  // Gate the Register button on every contract read being fully resolved.
+  // Until then we show a "Checking registry…" indicator so the user cannot
+  // click Register before the prior-notice scan has had a chance to fire.
+  const needsPriorScan = !!pHash && pHash !== PHASH_ZERO;
+  const existsCheckDone = !!sha256 && existsFetched && !existsFetching;
+  const priorScanDone =
+    !needsPriorScan || alreadyExists || (scanFetched && !scanFetching);
+  // If findSimilar returned a candidate, we must also wait on getRegistration.
+  const priorMatchResolved =
+    !priorMatchSha || (priorMatchFetched && !priorMatchFetching);
+  const allChecksComplete =
+    status.kind === "ready" &&
+    existsCheckDone &&
+    priorScanDone &&
+    priorMatchResolved;
 
   useEffect(() => {
     if (!file) return;
@@ -130,12 +158,13 @@ export default function RegisterPage() {
       isConnected &&
       onSepolia &&
       status.kind === "ready" &&
+      allChecksComplete &&
       !alreadyExists &&
       !!sha256 &&
       !!pHash &&
       // Hard gate: a perceptually-similar work is already on-chain → blocked.
       !hasPriorNotice,
-    [isConnected, onSepolia, status.kind, alreadyExists, sha256, pHash, hasPriorNotice]
+    [isConnected, onSepolia, status.kind, allChecksComplete, alreadyExists, sha256, pHash, hasPriorNotice]
   );
 
   function submit() {
@@ -220,16 +249,16 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {/* Prior-notice scan in flight */}
-            {scanningPrior && !alreadyExists && (
+            {/* Registry checks in flight — covers isRegistered, findSimilar, and getRegistration */}
+            {status.kind === "ready" && !allChecksComplete && !alreadyExists && (
               <div className="mt-6 flex items-center gap-2 text-[12px] text-text-tertiary">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                Scanning registry for prior notice…
+                Checking registry for existing or similar works…
               </div>
             )}
 
-            {/* Prior-notice match — HARD BLOCK */}
-            {!alreadyExists && hasPriorNotice && pHash && priorMatch && priorMatchSha && (
+            {/* Prior-notice match — HARD BLOCK (only after all checks resolve) */}
+            {allChecksComplete && !alreadyExists && hasPriorNotice && pHash && priorMatch && priorMatchSha && (
               <PriorNoticePanel
                 sha256={priorMatchSha as Hex}
                 ownerAddr={priorMatch[0] as string}
@@ -240,7 +269,7 @@ export default function RegisterPage() {
               />
             )}
 
-            {status.kind === "ready" && !alreadyExists && !hasPriorNotice && (
+            {status.kind === "ready" && allChecksComplete && !alreadyExists && !hasPriorNotice && (
               <button
                 onClick={submit}
                 disabled={!canSubmit}
