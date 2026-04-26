@@ -300,7 +300,8 @@ export default function RegisterPage() {
                 <div className="text-[13px] font-medium text-text-primary">
                   Couldn&apos;t reach the registry
                 </div>
-                <p className="text-[12px] text-text-secondary mt-1 leading-relaxed">
+                <p className="text-[10px] mono text-warning mt-1 break-all">{checkError}</p>
+                <p className="text-[12px] text-text-secondary mt-2 leading-relaxed">
                   Sepolia RPC didn&apos;t respond, so we can&apos;t confirm whether a
                   similar work is already on-chain. Registration is paused until
                   the check succeeds.
