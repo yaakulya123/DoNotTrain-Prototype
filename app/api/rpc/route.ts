@@ -24,9 +24,11 @@ export async function POST(req: NextRequest) {
   const body = await req.text();
 
   // Surface RPC method for log correlation
-  let parsedBody: { method?: string; id?: unknown } = {};
+  let parsedBody: { method?: string; id?: unknown; params?: unknown } = {};
   try { parsedBody = JSON.parse(body); } catch {}
   const tag = `[rpc method=${parsedBody.method ?? "?"} id=${String(parsedBody.id ?? "?")}]`;
+  const reqSummary = JSON.stringify(parsedBody.params).slice(0, 500);
+  console.log(tag, "REQ", reqSummary);
 
   let lastError: string | null = null;
   for (const upstream of UPSTREAM_RPCS) {
@@ -57,7 +59,7 @@ export async function POST(req: NextRequest) {
           continue;
         }
       }
-      console.log(tag, `${upstream} → ok (${text.length}B)`);
+      console.log(tag, `${upstream} → ok (${text.length}B) RES:`, text.slice(0, 500));
       return new Response(text, {
         status: 200,
         headers: { "content-type": "application/json" },
