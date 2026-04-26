@@ -41,7 +41,12 @@ export default function RegisterPage() {
   const { writeContract, data: txHash, error: writeError, reset } = useWriteContract();
   const { data: receipt } = useWaitForTransactionReceipt({ hash: txHash });
 
-  const { data: alreadyExists, isSuccess: existsSuccess } = useReadContract({
+  const {
+    data: alreadyExists,
+    isSuccess: existsSuccess,
+    error: existsError,
+    refetch: refetchExists,
+  } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: DONOTTRAIN_ABI,
     functionName: "isRegistered",
@@ -56,7 +61,12 @@ export default function RegisterPage() {
   const shouldScanForPrior =
     !!pHash && pHash !== PHASH_ZERO && !alreadyExists && status.kind === "ready";
 
-  const { data: similarHashes, isSuccess: scanSuccess } = useReadContract({
+  const {
+    data: similarHashes,
+    isSuccess: scanSuccess,
+    error: scanError,
+    refetch: refetchScan,
+  } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: DONOTTRAIN_ABI,
     functionName: "findSimilar",
@@ -65,13 +75,25 @@ export default function RegisterPage() {
   });
 
   const priorMatchSha = similarHashes?.[0];
-  const { data: priorMatch, isSuccess: priorMatchSuccess } = useReadContract({
+  const {
+    data: priorMatch,
+    isSuccess: priorMatchSuccess,
+    error: priorMatchError,
+    refetch: refetchPriorMatch,
+  } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: DONOTTRAIN_ABI,
     functionName: "getRegistration",
     args: priorMatchSha ? [priorMatchSha] : undefined,
     query: { enabled: !!priorMatchSha },
   });
+
+  const checkError = existsError ?? scanError ?? priorMatchError;
+  const retryChecks = () => {
+    refetchExists();
+    refetchScan();
+    refetchPriorMatch();
+  };
 
   const hasPriorNotice = !!priorMatchSha && !!priorMatch;
 
@@ -237,10 +259,31 @@ export default function RegisterPage() {
             )}
 
             {/* Registry checks in flight — covers isRegistered, findSimilar, and getRegistration */}
-            {status.kind === "ready" && !allChecksComplete && !alreadyExists && (
+            {status.kind === "ready" && !allChecksComplete && !alreadyExists && !checkError && (
               <div className="mt-6 flex items-center gap-2 text-[12px] text-text-tertiary">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 Checking registry for existing or similar works…
+              </div>
+            )}
+
+            {/* Registry-read failure — RPC down, network error, etc. The button
+                stays hidden because we cannot prove the file isn't a re-registration. */}
+            {status.kind === "ready" && checkError && !alreadyExists && (
+              <div className="mt-6 rounded-md border border-warning/40 bg-warning/5 p-4">
+                <div className="text-[13px] font-medium text-text-primary">
+                  Couldn&apos;t reach the registry
+                </div>
+                <p className="text-[12px] text-text-secondary mt-1 leading-relaxed">
+                  Sepolia RPC didn&apos;t respond, so we can&apos;t confirm whether a
+                  similar work is already on-chain. Registration is paused until
+                  the check succeeds.
+                </p>
+                <button
+                  onClick={retryChecks}
+                  className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border-strong bg-surface hover:bg-surface-2 text-[12px] text-text-primary transition"
+                >
+                  Retry registry check
+                </button>
               </div>
             )}
 
