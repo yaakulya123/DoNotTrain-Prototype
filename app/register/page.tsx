@@ -41,11 +41,7 @@ export default function RegisterPage() {
   const { writeContract, data: txHash, error: writeError, reset } = useWriteContract();
   const { data: receipt } = useWaitForTransactionReceipt({ hash: txHash });
 
-  const {
-    data: alreadyExists,
-    isFetched: existsFetched,
-    isFetching: existsFetching,
-  } = useReadContract({
+  const { data: alreadyExists, isSuccess: existsSuccess } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: DONOTTRAIN_ABI,
     functionName: "isRegistered",
@@ -60,11 +56,7 @@ export default function RegisterPage() {
   const shouldScanForPrior =
     !!pHash && pHash !== PHASH_ZERO && !alreadyExists && status.kind === "ready";
 
-  const {
-    data: similarHashes,
-    isFetched: scanFetched,
-    isFetching: scanFetching,
-  } = useReadContract({
+  const { data: similarHashes, isSuccess: scanSuccess } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: DONOTTRAIN_ABI,
     functionName: "findSimilar",
@@ -73,30 +65,25 @@ export default function RegisterPage() {
   });
 
   const priorMatchSha = similarHashes?.[0];
-  const {
-    data: priorMatch,
-    isFetched: priorMatchFetched,
-    isFetching: priorMatchFetching,
-  } = useReadContract({
+  const { data: priorMatch, isSuccess: priorMatchSuccess } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: DONOTTRAIN_ABI,
     functionName: "getRegistration",
     args: priorMatchSha ? [priorMatchSha] : undefined,
-    query: { enabled: !!priorMatchSha, retry: false },
+    query: { enabled: !!priorMatchSha },
   });
 
   const hasPriorNotice = !!priorMatchSha && !!priorMatch;
 
-  // Gate the Register button on every contract read being fully resolved.
-  // Until then we show a "Checking registry…" indicator so the user cannot
-  // click Register before the prior-notice scan has had a chance to fire.
+  // Security gate: only reveal the Register button after every relevant
+  // contract read has succeeded. If any read errored or timed out we leave
+  // the button hidden — better to make the user retry than to let a
+  // silently-failed prior-notice scan unlock registration of an
+  // already-protected work.
   const needsPriorScan = !!pHash && pHash !== PHASH_ZERO;
-  const existsCheckDone = !!sha256 && existsFetched && !existsFetching;
-  const priorScanDone =
-    !needsPriorScan || alreadyExists || (scanFetched && !scanFetching);
-  // If findSimilar returned a candidate, we must also wait on getRegistration.
-  const priorMatchResolved =
-    !priorMatchSha || (priorMatchFetched && !priorMatchFetching);
+  const existsCheckDone = !!sha256 && existsSuccess;
+  const priorScanDone = !needsPriorScan || alreadyExists || scanSuccess;
+  const priorMatchResolved = !priorMatchSha || priorMatchSuccess;
   const allChecksComplete =
     status.kind === "ready" &&
     existsCheckDone &&
